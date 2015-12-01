@@ -145,6 +145,7 @@ class BinaryResource(models.Model):
         """
         f = self.data.path
         if f and os.path.isfile(f):
+            logging.info('Erasing the file: %s'%self.data.path)
             os.remove(self.data.path)
         self.save()
         

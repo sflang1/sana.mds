@@ -191,7 +191,7 @@ def responses_to_observations(encounter, responses,sort=False,reverse=False):
             continue
                 
         answer = data['answer']
-        uuid = data['uuid']
+        uuid = data['id']
         if concept and concept.is_complex:
             logging.info("Got complex concept: node: %s, answer: %s" % (node,answer))
             if not answer or answer == "":
@@ -212,7 +212,7 @@ def responses_to_observations(encounter, responses,sort=False,reverse=False):
                 except:
                     logging.info("Creating new complex obs for encounter: %s" % encounter.uuid)
                     obs = v2.Observation.objects.create(
-                          uuid=data['uuid'],
+                          uuid=data['id'],
                           encounter=encounter,
                           node=node,
                           concept=concept,
@@ -360,6 +360,7 @@ def spform_to_encounter(form):
 		    subject=subject,
 		    concept=concept)
     '''
+    
     data = strip_deprecated_observations(_json.decode(responses))
     return encounter, data,created
                                                             
@@ -383,6 +384,7 @@ def sp_to_encounter(sp, subject):
     
 def write_complex_data(br):
     #encounter = v2.Encounter.objects.get(uuid=br.procedure.guid)
+    logging.info("Llega a write_complex_data")
     obs = v2.Observation.objects.get(encounter=br.procedure.guid,
 				     node=br.element_id)
     if not obs.concept.is_complex:
@@ -390,6 +392,7 @@ def write_complex_data(br):
     #obs.value_complex = obs.value_complex.field.generate_filename(obs, fname)
     path, _ = os.path.split(obs.value_complex.path)
     if not os.path.exists(path):
+        logging.debug("Creando el path %s"% path)
         os.makedirs(path)
     open(obs.value_complex.path,"w").close()
     obs._complex_size = br.total_size
@@ -399,8 +402,9 @@ def write_complex_data(br):
     #pathOut = "%s%s" % (settings.MEDIA_ROOT, obs.value_complex.name)
     #if not os.path.exists(path):
     #    os.makedirs(path)
-    os.rename(br.data.path,obs.value_complex.path)
-
+    #os.rename(br.data.path,obs.value_complex.path)
+    shutil.copyfile(br.data.path,obs.value_complex.path)    
+    logging.debug("File copied")
     # Successfully renamed so we update the progress
     obs._complex_progress = br.upload_progress
     obs.save()

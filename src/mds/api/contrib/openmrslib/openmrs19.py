@@ -240,6 +240,7 @@ class OpenMRS(openers.OpenMRSOpener):
         logging.debug("Request: %s" % req.get_full_url())
         logging.debug("...headers: %s" % req.header_items())
         logging.debug("...method: %s" % req.get_method())
+        logging.debug("...data: %s"%req.get_data())
         return opener.open(req)
     
     def open_session(self, username=None, password=None):

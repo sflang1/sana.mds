@@ -151,7 +151,7 @@ def binarychunk_submit(request):
     form = BinaryPacketForm(request.POST, request.FILES)
 
     if form.is_valid():
-        logging.info("Received valid binarychunk form")
+        logging.info("Received valid binarychunk form pruebaaaa")
 
         procedure_guid = form.cleaned_data['procedure_guid']
         element_id = form.cleaned_data['element_id']

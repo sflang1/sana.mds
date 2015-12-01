@@ -24,21 +24,23 @@ from .util import flush
 from . import v2compatlib
 # api.py -- interface-agnostic API methods
 
-BINARY_TYPES = ['PICTURE', 'SOUND', 'VIDEO', 'BINARYFILE']
+BINARY_TYPES = ['PICTURE', 'SOUND', 'VIDEO', 'BINARYFILE','EDF_Recording']
 """Element types that may include file data."""
 
 BINARY_TYPES_EXTENSIONS = {
     'PICTURE': 'jpg',
     'SOUND': '3gp',
     'VIDEO': '3gp',
-    'BINARYFILE': 'mpg',}
+    'BINARYFILE': 'mpg',
+    'EDF_Recording': 'edf'}
 """File extensions for the binary types."""
 
 CONTENT_TYPES = {
     'PICTURE': 'image/jpeg',
     'SOUND': 'audio/3gpp',
     'VIDEO': 'video/3gpp',
-    'BINARYFILE': 'video/mpeg'}
+    'BINARYFILE': 'video/mpeg',
+    'EDF_Recording': 'application/x-bsml+edf'}
 """Mime types for client content."""
 #'BINARYFILE': 'application/octet-stream'}
 
@@ -113,9 +115,11 @@ def register_saved_procedure(sp_guid, procedure_guid, responses,
     try:
         responses_dict = cjson.decode(responses,True)
         for k,v in responses_dict.items():
+            logging.info("%s"%v['type'])
             if settings.DEBUG:
                 logging.debug("%s : %s" % (k,v))
             if v['type'] in BINARY_TYPES:
+                logging.info("It has a binary element")
                 items = v['answer'].split(',') if v['answer'] else []
                 for item in items:
                     if item == "":
@@ -449,7 +453,7 @@ def register_binary_chunk(sp_guid, element_id, element_type, binary_guid,
             offset = int(byte_start)
             byte_end = int(byte_end)
             dest.seek(0, os.SEEK_END)
-            logging.info("upload_progress  = %s" % binary.upload_progress)
+            logging.info("upload_progress = %s" % binary.upload_progress)
             if dest.tell() != int(offset):
                 logging.error("WARNING: Synchronization: Client offset -> %s,"
                               "Server offset -> %s. Seeking to "
@@ -457,12 +461,13 @@ def register_binary_chunk(sp_guid, element_id, element_type, binary_guid,
                 dest.seek(offset, os.SEEK_SET)
 
             for chunk in byte_data:
-                logging.info("writing %d bytes." % len(chunk))
+                logging.info("writing %d bytes. Prueba" % len(chunk))
                 dest.write(chunk)
                 bytes_written += len(chunk)
             dest.flush()
             # update BinaryResource  current position
             current_position = dest.tell()
+            dest.close()
             logging.debug("offset -> %s, upload_progress = %s"
                           % (current_position, binary.upload_progress))
             if current_position > binary.upload_progress:
@@ -472,12 +477,15 @@ def register_binary_chunk(sp_guid, element_id, element_type, binary_guid,
             logging.debug('chunk bytes -> %s, ' % bytes_written)
             logging.debug('binary upload progress -> %s of %s'
                      % (binary.upload_progress, binary.total_size))
-        binary.save()
+            binary.save()
+        if dest.closed:
+            logging.info("The file has been closed")
 
         # Check if upload is completed and convert
         #if maybe_convert(binary):
         #    convert_binary(binary)
         if binary.ready_to_upload():
+            logging.debug('Ready to upload')
             v2compatlib.write_complex_data(binary)
         #binary = None
         return maybe_upload_procedure(sp)

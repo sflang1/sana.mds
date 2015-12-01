@@ -161,7 +161,7 @@ def maybe_upload_procedure(saved_procedure):
     # checking all associated binaries
     for binary in binaries:
         if binary.ready_to_upload():
-            message = ("Encounter: %s Binary: %s/%s COMPLETE" % (
+            message = ("MRS API: Encounter: %s Binary: %s/%s COMPLETE" % (
                         saved_procedure.guid, binary.guid, len(binaries)))
             ready = ready and True
             ready_list.append(binary.guid)
@@ -290,7 +290,7 @@ def maybe_upload_procedure(saved_procedure):
     #logging.debug("Uploading to OpenMRS: %s %s %s %s %s "
     #              % (patient_id, client_name,
     #                 savedprocedure_guid, files, cleaned_responses))
-    '''
+    
     result, msg, _ = omrs.upload_procedure(patient_id,
                                             client_name,
                                             procedure_title,
