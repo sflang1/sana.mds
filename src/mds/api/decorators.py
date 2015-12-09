@@ -120,6 +120,7 @@ def validate(operation='POST'):
                 data = cjson.decode(request.read())
             else:
                 data = handler.flatten_dict(getattr(request, operation))
+            logging.debug("Data from the request %s"% data)
             form = v_form(data=data,files=request.FILES) if request.FILES else v_form(data=data)
             # set raw_data here to work around django form validation
             setattr(request,'raw_data', data)

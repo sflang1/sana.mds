@@ -65,6 +65,7 @@ class SessionHandler(DispatchingHandler):
             
             username = data.get('username', 'empty')
             password = data.get('password','empty')
+            logging.info("En Handlers.py del core: (%s,%s)"% (username,password))
             if not settings.TARGET == 'SELF':
                 instance = User(username=username)
                 auth = {'username':username, 'password':password }

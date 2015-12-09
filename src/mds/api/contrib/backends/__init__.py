@@ -111,6 +111,7 @@ def dispatch(handlers, instance, auth=None,methodkwargs={}):
     ''' Invokes the callable handler for each handlers provided in the
         'handlers" iterable. The first item in the handler
     '''
+    logging.info("Pasa por dispatch con auth: %s"%auth)
     result = None
     for handler in handlers:
         try:
@@ -133,6 +134,7 @@ def create(instance, auth=None, methodkwargs={}):
         model = instance.__class__.__name__
     else:
         model = instance
+    logging.info("Se pasa por create en init.py")
     handlers = get_handlers(model,'create')
     result = dispatch(handlers, instance, auth=auth, methodkwargs=methodkwargs)
     return result
@@ -149,6 +151,7 @@ def read(instance, auth=None, methodkwargs={}):
         model = instance.__class__.__name__
     else:
         model = instance
+    logging.info("Se pasa por update en init.py")
     handlers = get_handlers(model)
     result = dispatch(handlers, instance, auth=auth,methodkwargs=methodkwargs)
     return result

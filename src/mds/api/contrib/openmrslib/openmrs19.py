@@ -10,7 +10,8 @@ import urllib2
 import cjson
 import time
 import base64
-
+from poster.encode import multipart_encode,MultipartParam
+from poster.streaminghttp import register_openers
 from django.conf import settings
 
 from . import openers
@@ -221,7 +222,7 @@ class OpenMRS(openers.OpenMRSOpener):
     forms = {"patient": patient_form,
                "login": login_form }
     
-    def open(self, url, username=None, password=None, use_json=False, **kwargs):
+    def open(self, url, username=None, password=None, use_json=False,binaryParams=False, **kwargs):
         #session_path = self.build_url("sessions",query=auth)
         opener, session = self.open_session(username, password)
         if not session["authenticated"]:
@@ -235,6 +236,7 @@ class OpenMRS(openers.OpenMRSOpener):
         req = urllib2.Request(url)
         req.add_header("jsessionid", jsessionid)
         if kwargs:
+            logging.info("Binary parameters. Must be encoded in a multipart form")
             data = cjson.encode(kwargs) if use_json else urllib.urlencode(kwargs)
             req.add_data(data)
         logging.debug("Request: %s" % req.get_full_url())
@@ -399,6 +401,14 @@ class OpenMRS(openers.OpenMRSOpener):
             description = encounter_queue_form(patient_id, phone_id,
                          procedure_title, saved_procedure_id,
                          responses)
+            binary_Params=False
+            description = cjson.encode(description)
+            post = {'description': str(description)}
+            logging.debug("Uploading procedure")
+            # NOTE: Check version format in settings matches OpenMRS version
+            description = encounter_queue_form(patient_id, phone_id,
+                         procedure_title, saved_procedure_id,
+                         responses)
             
             description = cjson.encode(description)
             post = {'description': str(description)}
@@ -434,7 +444,3 @@ class OpenMRS(openers.OpenMRSOpener):
                           % saved_procedure_id)
             raise e
         return result, message, encounter
-    
-
-
-    

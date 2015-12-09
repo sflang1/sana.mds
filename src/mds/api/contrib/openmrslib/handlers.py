@@ -218,6 +218,7 @@ class OpenMRSHandler(OpenMRSOpener):
                "login": login_form }
 
     def open(self, url, username=None, password=None, **kwargs):
+        logging.info("Auth session information: %s, %s"%(username,password))
         opener, session = self.open_session(username, password)
         if not session["authenticated"]:
             raise Exception(u"username and password combination incorrect!")
@@ -237,6 +238,7 @@ class OpenMRSHandler(OpenMRSOpener):
         logging.debug("Dispatching request")
         logging.debug("...url: %s" % req.get_full_url())
         logging.debug("...method: %s" % req.get_method())
+        logging.debug("... data: %s"%req.get_data())
         return opener.open(req)
     
     def open_session(self, username=None, password=None):
@@ -244,15 +246,16 @@ class OpenMRSHandler(OpenMRSOpener):
         url = self.build_url("sessions")
         cookies = cookielib.CookieJar()
         password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        password_mgr.add_password(None, url, username, password)
+        password_mgr.add_password(None, url, "admin", "Admin123")
         auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
         opener = urllib2.build_opener(auth_handler,
                 urllib2.HTTPCookieProcessor(cookies),)
         urllib2.install_opener(opener)
         req = urllib2.Request(url)
         basic64 = lambda x,y: base64.encodestring('%s:%s' % (x, y))[:-1]
-        if username and password:
-            req.add_header("Authorization", "Basic %s" % basic64(username, password))
+        req.add_header("Authorization", "Basic %s" % basic64("admin", "Admin123"))
+        #if username and password:
+            #req.add_header("Authorization", "Basic %s" % basic64(username, password))
         session = cjson.decode(opener.open(req).read())
         return opener, session
     
@@ -427,6 +430,8 @@ class OpenMRSHandler(OpenMRSOpener):
             auth=auth)
         '''
         data = m_subject.encode(instance)
+        logging.debug("Pasa por create Patient en handlers.py. Data: %s"%data)
+        logging.debug("Auth: %s"% auth)
         wsname = 'subject-create'
         response = self.wsdispatch(wsname, data=data, auth=auth)
         result = rest_reader(response, decoder=m_subject)

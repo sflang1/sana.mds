@@ -94,6 +94,7 @@ class DispatchingHandler(BaseHandler,HandlerMixin):
         """ POST Request handler. Requires valid form defined by model of  
             extending class.
         """
+        logging.info("En handlers. Request_data %s"% request.data)
         logging.info("create(): %s" % (request.user))
         if uuid:
             return self.update(request,uuid=uuid)

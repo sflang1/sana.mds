@@ -177,9 +177,11 @@ class OpenMRSOpener(AbstractHandler):
                              pargs=pargs,
                              query=query)
         logging.debug("Dispatch: %s, Url: %s" % (wsname, url))
+
         if wsname == "sessions":
             return self.open(url, auth["username"], auth["password"])
         if data:
+            logging.debug("hay data")
             return self.create(url, response_handler=response_handler, auth=auth, data=data)
         else:
             query = query if query else {}
