@@ -237,27 +237,48 @@ class OpenMRSHandler(OpenMRSOpener):
             req.add_data(postdata)
         logging.debug("Dispatching request")
         logging.debug("...url: %s" % req.get_full_url())
+
         logging.debug("...method: %s" % req.get_method())
         logging.debug("... data: %s"%req.get_data())
         return opener.open(req)
     
     def open_session(self, username=None, password=None):
         logging.debug("Opening session")
-        url = self.build_url("sessions")
-        cookies = cookielib.CookieJar()
-        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        password_mgr.add_password(None, url, "admin", "Admin123")
-        auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-        opener = urllib2.build_opener(auth_handler,
-                urllib2.HTTPCookieProcessor(cookies),)
-        urllib2.install_opener(opener)
-        req = urllib2.Request(url)
-        basic64 = lambda x,y: base64.encodestring('%s:%s' % (x, y))[:-1]
-        req.add_header("Authorization", "Basic %s" % basic64("admin", "Admin123"))
-        #if username and password:
-            #req.add_header("Authorization", "Basic %s" % basic64(username, password))
-        session = cjson.decode(opener.open(req).read())
-        return opener, session
+        if username =="":
+            logging.info("No session information")
+            url = self.build_url("sessions")
+            cookies = cookielib.CookieJar()
+            password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            password_mgr.add_password(None, url, "admin", "Admin123")
+            auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+            opener = urllib2.build_opener(auth_handler,
+                    urllib2.HTTPCookieProcessor(cookies),)
+            urllib2.install_opener(opener)
+            req = urllib2.Request(url)
+            basic64 = lambda x,y: base64.encodestring('%s:%s' % (x, y))[:-1]
+            req.add_header("Authorization", "Basic %s" % basic64("admin", "Admin123"))
+            #if username and password:
+                #req.add_header("Authorization", "Basic %s" % basic64(username, password))
+            session = cjson.decode(opener.open(req).read())
+            return opener, session
+        else:
+            logging.info("There's session information")
+            url = self.build_url("sessions")
+            cookies = cookielib.CookieJar()
+            password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            password_mgr.add_password(None, url, username, password)
+            auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+            opener = urllib2.build_opener(auth_handler,
+                    urllib2.HTTPCookieProcessor(cookies),)
+            urllib2.install_opener(opener)
+            req = urllib2.Request(url)
+            basic64 = lambda x,y: base64.encodestring('%s:%s' % (x, y))[:-1]
+            req.add_header("Authorization", "Basic %s" % basic64(username, password))
+            #if username and password:
+                #req.add_header("Authorization", "Basic %s" % basic64(username, password))
+            session = cjson.decode(opener.open(req).read())
+            return opener, session
+
     
     def getPatient(self,username, password, patientid):
         """ Retrieves a patient by id from OpenMRS through the Webservices.REST 

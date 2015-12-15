@@ -222,7 +222,7 @@ class OpenMRS(openers.OpenMRSOpener):
     forms = {"patient": patient_form,
                "login": login_form }
     
-    def open(self, url, username=None, password=None, use_json=False,binaryParams=False, **kwargs):
+    def open(self, url, username=None, password=None, use_json=False,binary_params=False, **kwargs):
         #session_path = self.build_url("sessions",query=auth)
         opener, session = self.open_session(username, password)
         if not session["authenticated"]:
@@ -236,9 +236,24 @@ class OpenMRS(openers.OpenMRSOpener):
         req = urllib2.Request(url)
         req.add_header("jsessionid", jsessionid)
         if kwargs:
-            logging.info("Binary parameters. Must be encoded in a multipart form")
-            data = cjson.encode(kwargs) if use_json else urllib.urlencode(kwargs)
-            req.add_data(data)
+            if binary_params is False:
+                data = cjson.encode(kwargs) if use_json else urllib.urlencode(kwargs)
+                req.add_data(data)    
+            else:
+                logging.info("Binary parameters. Must be encoded in a multipart form")
+                auxTuple={"description":kwargs["description"]}
+                description_data=cjson.encode(auxTuple) if use_json else urllib.urlencode(auxTuple)
+                logging.info("Description parameter filled: %s"% description_data)
+                logging.info("Checking for binary files")
+                for key,value in kwargs.iteritems():
+                    if key.startswith("medImageFile-"):
+                        #Archivo binario
+                        logging.info("Viendo el archivo binario %s, con path %s"%(key,value))
+                        file_param=MultipartParam.from_file(key,value)
+                datagen,headers=multipart_encode([file_param])
+                req=urllib2.Request(url,datagen,headers)
+                req.add_data(description_data)
+                req.add_header("jsessionid",jsessionid)
         logging.debug("Request: %s" % req.get_full_url())
         logging.debug("...headers: %s" % req.header_items())
         logging.debug("...method: %s" % req.get_method())
@@ -256,6 +271,7 @@ class OpenMRS(openers.OpenMRSOpener):
         opener = urllib2.build_opener(auth_handler,
                 urllib2.HTTPCookieProcessor(cookies),)
         urllib2.install_opener(opener)
+        logging.info("Asking for permissions to the URL: %s" % url)
         req = urllib2.Request(url)
         basic64 = lambda x,y: base64.encodestring('%s:%s' % (x, y))[:-1]
         print basic64(username, password), username, password
@@ -263,6 +279,7 @@ class OpenMRS(openers.OpenMRSOpener):
             req.add_header("Authorization", "Basic %s" % basic64(username, password))
         #session = urllib2.urlopen(req)
         session = cjson.decode(opener.open(req).read())
+        logging.info("Session ID set: %s" % session["sessionId"])
         return opener, session
     
     def getPatient(self,username, password, patientid):
@@ -386,8 +403,8 @@ class OpenMRS(openers.OpenMRSOpener):
             opener, session = self.open_session(username, password)
             if not session["authenticated"]:
                 raise Exception(u"username and password combination incorrect!")
-
             url = "%smoduleServlet/sana/permissionsServlet" % self.host
+            logging.info("URL for asking permissions %s "% url)
             response = opener.open(url).read()
             logging.debug("Got result %s" % response)
             resp_msg = cjson.decode(response,True)
@@ -401,15 +418,7 @@ class OpenMRS(openers.OpenMRSOpener):
             description = encounter_queue_form(patient_id, phone_id,
                          procedure_title, saved_procedure_id,
                          responses)
-            binary_Params=False
-            description = cjson.encode(description)
-            post = {'description': str(description)}
-            logging.debug("Uploading procedure")
-            # NOTE: Check version format in settings matches OpenMRS version
-            description = encounter_queue_form(patient_id, phone_id,
-                         procedure_title, saved_procedure_id,
-                         responses)
-            
+            binary_params=False
             description = cjson.encode(description)
             post = {'description': str(description)}
             logging.debug("Encoded parameters, checking files.")
@@ -422,14 +431,15 @@ class OpenMRS(openers.OpenMRSOpener):
                     for i,path in enumerate(files[eid]):
                         logging.info('medImageFile-%s-%d -> %s' 
                                      % (eid, i, path))
-                        post['medImageFile-%s-%d' % (eid, i)] = open(path, "rb")
+                        post['medImageFile-%s-%d' % (eid, i)] =path
+                        binary_params=True
 
             url = "%smoduleServlet/sana/uploadServlet" % self.host
             logging.debug("About to post to " + url)
             response = self.open(url, 
                 username=username,
                 password=password,
-                use_json=False, **post).read()
+                use_json=False, binary_params=binary_params,**post).read()
             logging.debug("Got result %s" % response)
                 
             resp_msg = cjson.decode(response,True)
